@@ -2,14 +2,16 @@ import os
 
 _path = os.path.dirname(__file__)
 
+
 def read(path):
-    with open(path, 'r') as input_data_file:
+    with open(path, "r") as input_data_file:
         input_data = input_data_file.read()
-    lines = input_data.split('\n')
+    lines = input_data.split("\n")
     split_lines = [f.split() for f in lines]
     return split_lines
 
-def main(path = _path + "/input.txt", print_value=True):
+
+def main(path=_path + "/input.txt", print_value=True):
     input = read(path)
     col1 = sorted([v[0] for v in input])
     col2 = sorted([v[1] for v in input])
@@ -19,11 +21,14 @@ def main(path = _path + "/input.txt", print_value=True):
         print(res)
     return res
 
+
 if __name__ == "__main__":
     # validate on example
-    example_calculation = main( _path + "/example_input.txt", print_value=False)
+    example_calculation = main(_path + "/example_input.txt", print_value=False)
     example_answer = int(read(_path + "/example_answer.txt")[0][0])
-    assert example_calculation == example_answer, f"Calculation {example_calculation} is different from example answer {example_answer}"
+    assert (
+        example_calculation == example_answer
+    ), f"Calculation {example_calculation} is different from example answer {example_answer}"
 
     # run on the input
     main()
