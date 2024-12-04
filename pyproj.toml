@@ -1,3 +1,5 @@
+[tool.ruff]
+
 ignore = [
     "PGH003",       # Use specific rule codes when ignoring type issues
     "E501",         # Line too long

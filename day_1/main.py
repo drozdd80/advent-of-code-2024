@@ -21,13 +21,15 @@ def main(path=_path + "/input.txt", print_value=True):
         print(res)
     return res
 
+
 def main_2(path=_path + "/input.txt", print_value=True):
     from collections import Counter
+
     input = read(path)
     col1 = [int(v[0]) for v in input]
     col2 = [int(v[1]) for v in input]
-    
-    res = sum([Counter(col2)[val1]*val1 for val1 in col1])
+
+    res = sum([Counter(col2)[val1] * val1 for val1 in col1])
     if print_value:
         print(res)
     return res

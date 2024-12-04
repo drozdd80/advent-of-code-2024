@@ -1,5 +1,4 @@
 import os
-import re
 
 _path = os.path.dirname(__file__)
 
