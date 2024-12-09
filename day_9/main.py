@@ -64,31 +64,31 @@ def main_2(path=_path + "/input.txt", print_value=True):
         start = decripted.index(v)
         end = len(decripted) - reversed_decripted.index(v) - 1
         vpos[v] = (start, end)
+
     for v in tqdm(sorted(unique_values, reverse=True)):
-        #import ipdb; ipdb.set_trace()
         size = vpos[v][1] - vpos[v][0] + 1
-        # only save the sum. When window moves, change the value by the difference beween incoming and outcoming values
-        # start window at the first '' value
         window = 0
-        for i in range(size):
-            if decripted[i] != '':
-                window += 1
-        if window == 0:
-            for i in range(size):
-                decripted[i], decripted[vpos[v][0]] = decripted[vpos[v][0]], decripted[i]
-        else:
-            for i in range(1, vpos[v][0]-size):
-                next_window_change = 0 if decripted[i + size - 1] == '' else 1
-                prev_window_change = 0 if decripted[i-1] == '' else 1
-                window += next_window_change - prev_window_change
-                if window == 0:
-                    for j in range(size):
-                        decripted[i+j], decripted[vpos[v][0] + j] = decripted[vpos[v][0] + j], decripted[i+j]
-                    break
+        first_empty_ind = decripted.index('')
+        if size+first_empty_ind <= len(decripted):
+            for i in range(first_empty_ind, size+first_empty_ind):
+                if decripted[i] != '':
+                    window += 1
+            if window == 0:
+                for i in range(first_empty_ind, size+first_empty_ind):
+                    j = i - first_empty_ind
+                    decripted[i], decripted[vpos[v][0] + j] = decripted[vpos[v][0] + j], decripted[i]
+            else:
+                for i in range(1+first_empty_ind, vpos[v][0]-size):
+                    next_window_change = 0 if decripted[i + size - 1] == '' else 1
+                    prev_window_change = 0 if decripted[i-1] == '' else 1
+                    window += next_window_change - prev_window_change
+                    if window == 0:
+                        for j in range(size):
+                            decripted[i+j], decripted[vpos[v][0] + j] = decripted[vpos[v][0] + j], decripted[i+j]
+                        break
                 
     res = sum([i*v for i, v in enumerate(decripted) if v != ''])
 
-    #import ipdb; ipdb.set_trace()
     if print_value:
         print(res)
     return res
