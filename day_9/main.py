@@ -78,7 +78,7 @@ def main_2(path=_path + "/input.txt", print_value=True):
                     j = i - first_empty_ind
                     decripted[i], decripted[vpos[v][0] + j] = decripted[vpos[v][0] + j], decripted[i]
             else:
-                for i in range(1+first_empty_ind, vpos[v][0]-size):
+                for i in range(1+first_empty_ind, vpos[v][0]-size+1):
                     next_window_change = 0 if decripted[i + size - 1] == '' else 1
                     prev_window_change = 0 if decripted[i-1] == '' else 1
                     window += next_window_change - prev_window_change
