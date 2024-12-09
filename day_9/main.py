@@ -69,27 +69,26 @@ def main_2(path=_path + "/input.txt", print_value=True):
         size = vpos[v][1] - vpos[v][0] + 1
         # only save the sum. When window moves, change the value by the difference beween incoming and outcoming values
         # start window at the first '' value
-        window = []
+        window = 0
         for i in range(size):
-            if decripted[i] == '':
-                window.append(0)
-            else:
-                window.append(1)
-        if sum(window) == 0:
+            if decripted[i] != '':
+                window += 1
+        if window == 0:
             for i in range(size):
                 decripted[i], decripted[vpos[v][0]] = decripted[vpos[v][0]], decripted[i]
         else:
-            for i in range(vpos[v][0]-size):
-                for j in range(size-1):
-                    window[j] = window[j+1]
-                window[-1] = 0 if decripted[i + size -1] == '' else 1
-                if sum(window) == 0:
+            for i in range(1, vpos[v][0]-size):
+                next_window_change = 0 if decripted[i + size - 1] == '' else 1
+                prev_window_change = 0 if decripted[i-1] == '' else 1
+                window += next_window_change - prev_window_change
+                if window == 0:
                     for j in range(size):
                         decripted[i+j], decripted[vpos[v][0] + j] = decripted[vpos[v][0] + j], decripted[i+j]
                     break
                 
     res = sum([i*v for i, v in enumerate(decripted) if v != ''])
 
+    #import ipdb; ipdb.set_trace()
     if print_value:
         print(res)
     return res
@@ -104,12 +103,12 @@ def check_example(func, input_filename = "example_input.txt", answer_filename = 
     ), f"Calculation {example_calculation} is different from example answer {example_answer}"
 
 if __name__ == "__main__":
-    check_example(main, input_filename = "example_input.txt", answer_filename = "example_answer.txt")
+    # check_example(main, input_filename = "example_input.txt", answer_filename = "example_answer.txt")
+
+    # #run on the input
+    # main()
+
+    check_example(main_2, input_filename = "example_input.txt", answer_filename = "example_answer_2.txt")
 
     #run on the input
-    main()
-
-    # check_example(main_2, input_filename = "example_input.txt", answer_filename = "example_answer_2.txt")
-
-    # # run on the input
-    # main_2()
+    main_2()
