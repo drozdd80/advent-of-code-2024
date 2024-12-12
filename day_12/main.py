@@ -42,7 +42,7 @@ def search_neighbours(v, coord, plants_dict, garden, plant_coord_list):
 
 
 def get_gardens(data, plants_dict):
-    plant_coord_list = [(i,j) for j, line in enumerate(data) for i, _ in enumerate(line)]
+    plant_coord_list = [(i,j) for i, line in enumerate(data) for j, _ in enumerate(line)]
     gardens = []
     #for coord in plant_coord_list:
     while len(plant_coord_list) > 0:
@@ -80,11 +80,96 @@ def main(path=_path + "/input.txt", print_value=True):
     return res
 
 
+def edge_counter(gardens, plants_dict, data, order):
+    edges = {}
+    for g, garden in enumerate(gardens):
+        edges[g] = {}
+        for c1, c2 in garden:
+            edges[g][(c1,c2)] = []
+            v = data[c1][c2]
+            neighbours = plants_dict[v][(c1,c2)]
+            for k, (i, j) in enumerate(order):
+                if (c1+i, c2+j) not in neighbours:
+                    edges[g][(c1,c2)].append(k)
+    return edges
+
+def diagonal_neighbour_case(plant,plants_coord_dict, garden_left, edges_n, edges_g, start, height, width):
+    plant_neighbours = plants_coord_dict[plant]
+    for i, j in [(1,1), (1,-1), (-1,-1), (-1,1)]:
+        ic = plant[0] + i
+        jc = plant[1] + j
+        current = (ic, jc)
+        if is_valid(ic, jc, height, width):
+            current_neighbours = plants_coord_dict[current]
+            neighbour_overlap = len([i for i in current_neighbours if i in plant_neighbours])
+            if (current in garden_left) and (neighbour_overlap > 0):
+                garden_left.remove(current)
+                edges_n += len(edges_g[current])
+                side_counter(edges_g, plants_coord_dict, plant, garden_left, edges_n, start, height, width)
+                return edges_n
+    return edges_n
+
+def side_counter(edges_g, plants_coord_dict, plant, garden_left, edges_n, start, height, width):
+    plant_edges = edges_g[plant]
+    if len(garden_left) == 0:
+        #import ipdb; ipdb.set_trace()
+        start_edges = edges_g[start]
+        common_edges = [i for i in start_edges if i in plant_edges]
+        return edges_n# - len(common_edges)
+    
+    for neighbour in plants_coord_dict[plant]:
+        neighbour_edges = edges_g[neighbour]
+        if neighbour in garden_left:
+            garden_left.remove(neighbour)
+            common_edges = [i for i in neighbour_edges if i in plant_edges]
+            #import ipdb; ipdb.set_trace()
+            edges_n += len(neighbour_edges) - len(common_edges)
+            edges_n = side_counter(edges_g, plants_coord_dict, plant, garden_left, edges_n, start, height, width)
+            return edges_n
+    edges_n = diagonal_neighbour_case(plant,plants_coord_dict, garden_left, edges_n, edges_g, start, height, width)
+    return edges_n
+
+
+
+def count_sides(gardens, edges, plants_coord_dict, height, width):
+    sides = []
+    for g, garden in enumerate(gardens):
+        # garden with edges
+        edge_garden = list(edges[g].keys())
+        start = edge_garden[0]
+        edge_garden.remove(start)
+        edges_n = len(edges[g][start])
+        edges_n = side_counter(edges_g=edges[g], plants_coord_dict=plants_coord_dict, plant=start, garden_left=edge_garden, edges_n=edges_n, start=start, height=height, width=width)
+        
+        # remove common edges of the start node
+        start_neighbour_edges = [v for neighbour in plants_coord_dict[start] for v in edges[g][neighbour]]
+        common_edges = [i for i in start_neighbour_edges if i in edges[g][start]]
+        edges_n += -len(common_edges)
+        sides.append(edges_n)
+            # check neightbours
+            # count how many edges with the same side do they have in common
+            # subtrack them
+            # continue until you get to the original plant
+            # if there are no new neighbours left except the last one, it means that the shape it concave
+            # need to check plants at diagonals (i+1, j+1). But they need to have a common neighbour.
+    return sides
+
 def main_2(path=_path + "/input.txt", print_value=True):
-    #input = read(path)
+    input = read(path)
+    height = len(input)
+    width = len(input[0])
+    plants_dict = {}
+    combine_stats(input, plants_dict)
+    gardens = get_gardens(input, plants_dict)
+    order = [(1,0), (0,1), (-1,0), (0,-1)]
+    edges = edge_counter(gardens, plants_dict, input, order)
+    plants_coord_dict = {k:v for val in plants_dict.values() for k,v in val.items()}
+    sides = count_sides(gardens, edges, plants_coord_dict, height, width)
 
     res = 0
-
+    for g, garden in enumerate(gardens):
+        res += len(garden) * sides[g]
+    #import ipdb; ipdb.set_trace()
     if print_value:
         print(res)
     return res
@@ -99,13 +184,17 @@ def check_example(func, input_filename = "example_input.txt", answer_filename = 
     ), f"Calculation {example_calculation} is different from example answer {example_answer}"
 
 if __name__ == "__main__":
-    check_example(main, input_filename = "example_input_2.txt", answer_filename = "example_answer_2.txt")
-    check_example(main, input_filename = "example_input.txt", answer_filename = "example_answer.txt")
+    # check_example(main, input_filename = "example_input_2.txt", answer_filename = "example_answer_2.txt")
+    # check_example(main, input_filename = "example_input.txt", answer_filename = "example_answer.txt")
 
-    # #run on the input
-    main()
-
-    # check_example(main_2, input_filename = "example_input.txt", answer_filename = "example_answer_2.txt")
+    # # #run on the input
+    # main()
+    #main(path=_path + "/example_custom_input_1.txt")
+    main_2(path=_path + "/example_custom_input_1.txt")
+    #check_example(main_2, input_filename = "example_input_3.txt", answer_filename = "example_answer_3.txt")
+    # check_example(main_2, input_filename = "example_input_4.txt", answer_filename = "example_answer_4.txt")
+    # check_example(main_2, input_filename = "example_input_5.txt", answer_filename = "example_answer_5.txt")
+    # check_example(main_2, input_filename = "example_input.txt", answer_filename = "example_answer_6.txt")
 
     # #run on the input
     # main_2()
