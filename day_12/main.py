@@ -1,4 +1,5 @@
 import os
+import numpy as np
 
 _path = os.path.dirname(__file__)
 
@@ -93,83 +94,66 @@ def edge_counter(gardens, plants_dict, data, order):
                     edges[g][(c1,c2)].append(k)
     return edges
 
-def diagonal_neighbour_case(plant,plants_coord_dict, garden_left, edges_n, edges_g, start, height, width):
-    plant_neighbours = plants_coord_dict[plant]
-    last_node = plant
-    for i, j in [(1,1), (1,-1), (-1,-1), (-1,1)]:
-        ic = plant[0] + i
-        jc = plant[1] + j
-        current = (ic, jc)
-        if is_valid(ic, jc, height, width):
-            current_neighbours = plants_coord_dict[current]
-            neighbour_overlap = len([i for i in current_neighbours if i in plant_neighbours])
-            if (current in garden_left) and (neighbour_overlap > 0):
-                garden_left.remove(current)
-                uncommon_edges = [i for i in edges_g[current] if i not in edges_g[plant]]
-                edges_n += len(edges_g[current])
-                edges_n, last_node = side_counter(edges_g, plants_coord_dict, current, garden_left, edges_n, start, height, width, uncommon_edges)
-                return edges_n, last_node
-    return edges_n, last_node
+def get_possible_edge_neighbours(edge):
 
-def side_counter(edges_g, plants_coord_dict, plant, garden_left, edges_n, start, height, width, uncommon_edges):
-    plant_edges = edges_g[plant]
-    if len(garden_left) == 0:
-        if (len(edges_g[plant]) == 4):
-            return edges_n, plant
-        else:
-
-        #import ipdb; ipdb.set_trace()
-            start_edges = edges_g[start]
-            common_edges = [i for i in start_edges if i in uncommon_edges]
-            for edge in common_edges:
-                if (edge == 0) or (edge == 2):
-                    if start[0] == plant[0]:
-                        edges_n += -1
-                if (edge == 1) or (edge == 3):
-                    if start[1] == plant[1]:
-                        edges_n += -1
-                
-            return edges_n, plant
+    dcoords = [(1,1), (0,1), (0,0), (1,-1), (0,-1), (0,0)]
+    neighbour_edge_n = [3, 0, 1, 1, 0, 3]
+    rotation_matrix = np.array([[0, -1],
+                                [1,  0]])
+    for _ in range(edge):
+        for i, dcoord in enumerate(dcoords):
+            dcoords[i] = np.dot(rotation_matrix, dcoord)
+    neighbour_edge_n = [(ed + edge)%4 for ed in neighbour_edge_n]
+    return dcoords, neighbour_edge_n
     
-    for neighbour in plants_coord_dict[plant]:
-        neighbour_edges = edges_g[neighbour]
-        if neighbour in garden_left:
-            garden_left.remove(neighbour)
-            common_edges = [i for i in neighbour_edges if i in plant_edges]
-            uncommon_edges = [i for i in neighbour_edges if i not in plant_edges]
-            #import ipdb; ipdb.set_trace()
-            edges_n += len(neighbour_edges) - len(common_edges)
-            edges_n, last_node = side_counter(edges_g, plants_coord_dict, neighbour, garden_left, edges_n, start, height, width, uncommon_edges)
-            return edges_n, last_node
-        
-    edges_n, last_node = diagonal_neighbour_case(plant,plants_coord_dict, garden_left, edges_n, edges_g, start, height, width)
 
-    return edges_n, last_node
+def get_edge_neighbours(edge, coord, valid_edge_coords, edges_g):
+    neighbour_edges = []
+    dcoords, neighbour_edge_n = get_possible_edge_neighbours(edge)
+    for (di, dj), en in zip(dcoords, neighbour_edge_n):
+        neighbour_coord = (coord[0] + di, coord[1] + dj)
+        if (neighbour_coord in valid_edge_coords) and (en in edges_g[neighbour_coord]):
+            neighbour_edges.append((neighbour_coord[0], neighbour_coord[1], en))
+    return neighbour_edges
 
+def edge_neighbours(gardens, edges):
+    neighbour_edge_dict = {}
+    for g, garden in enumerate(gardens):
+        neighbour_edge_dict[g] = {}
+        valid_edge_coords = list(edges[g].keys())
+        for coord, c_edges in edges[g].items():
+            for edge in c_edges:
+                neighbour_edges = get_edge_neighbours(edge, coord, valid_edge_coords, edges[g])
+                neighbour_edge_dict[g][coord[0], coord[1], edge] = neighbour_edges
+    return neighbour_edge_dict
 
+def side_counter_new(edge_list, current_edge, neighbour_edge_dict_g, side_n, start_edge):
+    for edge in neighbour_edge_dict_g[current_edge]:
+        if edge in edge_list:
+            if edge[2] != current_edge[2]:
+                side_n += 1
+            edge_list.remove(edge)
+            side_n = side_counter_new(edge_list, edge, neighbour_edge_dict_g, side_n, start_edge)
+            return side_n
+    
+    if start_edge[2] == current_edge[2]:
+        side_n += -1
+    return side_n
 
-def count_sides(gardens, edges, plants_coord_dict, height, width):
+def count_sides_new(gardens, neighbour_edge_dict):
     sides = []
     for g, garden in enumerate(gardens):
-        # garden with edges
-        edge_garden = list(edges[g].keys())
-        start = edge_garden[0]
-        edge_garden.remove(start)
-        edges_n = len(edges[g][start])
-        edges_n, last_node = side_counter(edges_g=edges[g], plants_coord_dict=plants_coord_dict, plant=start, garden_left=edge_garden, edges_n=edges_n, start=start, height=height, width=width, uncommon_edges=edges[g][start])
-        
-        # remove common edges of the start node
-        # if last_node in plants_coord_dict[start]:
-        #     common_edges = [i for i in edges[g][last_node] if i in edges[g][start]]
-        #     edges_n += -len(common_edges)
-        sides.append(edges_n)
-            # check neightbours
-            # count how many edges with the same side do they have in common
-            # subtrack them
-            # continue until you get to the original plant
-            # if there are no new neighbours left except the last one, it means that the shape it concave
-            # need to check plants at diagonals (i+1, j+1). But they need to have a common neighbour.
+        edge_list = list(neighbour_edge_dict[g].keys())
+        side_sum = 0
+        while len(edge_list) > 0:
+            start_edge = edge_list[0]
+            edge_list.remove(start_edge)
+            side_n = 1
+            side_n = side_counter_new(edge_list, start_edge, neighbour_edge_dict[g], side_n, start_edge)
+            side_sum += side_n
+        sides.append(side_sum)
     return sides
+        
 
 def main_2(path=_path + "/input.txt", print_value=True):
     """
@@ -192,6 +176,8 @@ def main_2(path=_path + "/input.txt", print_value=True):
     5. edge 2 from node (i, j+1). Neighbour. Doesn't increase the side count
     6. edge 1 of the same node (i,j). 
 
+    neigbour is valid if it is in the edge list for the garden
+    
     need to create dictionary with edge neighbours based on 3 coords: 2 coords of the node and coord of the edge
 
     If edge-neighbour has the same edge number then side count does not increase, otherwise it does.
@@ -202,20 +188,18 @@ def main_2(path=_path + "/input.txt", print_value=True):
     Continue until the list is empty.
     """
     input = read(path)
-    height = len(input)
-    width = len(input[0])
     plants_dict = {}
     combine_stats(input, plants_dict)
     gardens = get_gardens(input, plants_dict)
     order = [(1,0), (0,1), (-1,0), (0,-1)]
     edges = edge_counter(gardens, plants_dict, input, order)
-    plants_coord_dict = {k:v for val in plants_dict.values() for k,v in val.items()}
-    sides = count_sides(gardens, edges, plants_coord_dict, height, width)
+
+    neighbour_edge_dict = edge_neighbours(gardens, edges)
+    sides =  count_sides_new(gardens, neighbour_edge_dict)
 
     res = 0
     for g, garden in enumerate(gardens):
         res += len(garden) * sides[g]
-    #import ipdb; ipdb.set_trace()
     if print_value:
         print(res)
     return res
@@ -230,17 +214,15 @@ def check_example(func, input_filename = "example_input.txt", answer_filename = 
     ), f"Calculation {example_calculation} is different from example answer {example_answer}"
 
 if __name__ == "__main__":
-    # check_example(main, input_filename = "example_input_2.txt", answer_filename = "example_answer_2.txt")
-    # check_example(main, input_filename = "example_input.txt", answer_filename = "example_answer.txt")
-
-    # # #run on the input
-    # main()
-    #main(path=_path + "/example_custom_input_1.txt")
-    main_2(path=_path + "/example_custom_input_1.txt")
-    #check_example(main_2, input_filename = "example_input_3.txt", answer_filename = "example_answer_3.txt")
-    # check_example(main_2, input_filename = "example_input_4.txt", answer_filename = "example_answer_4.txt")
-    # check_example(main_2, input_filename = "example_input_5.txt", answer_filename = "example_answer_5.txt")
-    # check_example(main_2, input_filename = "example_input.txt", answer_filename = "example_answer_6.txt")
+    check_example(main, input_filename = "example_input_2.txt", answer_filename = "example_answer_2.txt")
+    check_example(main, input_filename = "example_input.txt", answer_filename = "example_answer.txt")
 
     # #run on the input
-    # main_2()
+    main()
+    check_example(main_2, input_filename = "example_input_3.txt", answer_filename = "example_answer_3.txt")
+    check_example(main_2, input_filename = "example_input_4.txt", answer_filename = "example_answer_4.txt")
+    check_example(main_2, input_filename = "example_input_5.txt", answer_filename = "example_answer_5.txt")
+    check_example(main_2, input_filename = "example_input.txt", answer_filename = "example_answer_6.txt")
+
+    # #run on the input
+    main_2()
