@@ -40,8 +40,7 @@ def cramer_rule(A, B):
 
     return solutions
 
-def main(path=_path + "/input.txt", print_value=True):
-    input_dicts = read(path)
+def solve(input_dicts):
     valid_solutions = []
     for play in input_dicts:
 
@@ -55,6 +54,12 @@ def main(path=_path + "/input.txt", print_value=True):
         if (solution[0] == int(solution[0])) and (solution[1] == int(solution[1])):
             solution = [int(sol) for sol in solution]
             valid_solutions.append(solution)
+    return valid_solutions
+
+def main(path=_path + "/input.txt", print_value=True):
+    input_dicts = read(path)
+
+    valid_solutions = solve(input_dicts)
     res = sum([sol[0]*3 + sol[1] for sol in valid_solutions])  
 
     if print_value:
@@ -62,14 +67,19 @@ def main(path=_path + "/input.txt", print_value=True):
     return res
 
 
-# def main_2(path=_path + "/input.txt", print_value=True):
-#     input = read(path)
+def main_2(path=_path + "/input.txt", print_value=True):
+    input_dicts = read(path)
 
-#     res = 0
+    for i in range(len(input_dicts)):
+        input_dicts[i]['Prize']['X'] += 10000000000000
+        input_dicts[i]['Prize']['Y'] += 10000000000000
 
-#     if print_value:
-#         print(res)
-#     return res
+    valid_solutions = solve(input_dicts)
+    res = sum([sol[0]*3 + sol[1] for sol in valid_solutions])  
+
+    if print_value:
+        print(res)
+    return res
 
 
 def check_example(func, input_filename = "example_input.txt", answer_filename = "example_answer.txt"):
@@ -86,7 +96,5 @@ if __name__ == "__main__":
     #run on the input
     main()
 
-    # check_example(main_2, input_filename = "example_input.txt", answer_filename = "example_answer_2.txt")
-
-    # #run on the input
-    # main_2()
+    #run on the input
+    main_2()
