@@ -29,14 +29,33 @@ def main(path=_path + "/input.txt", print_value=True):
     return res
 
 
-# def main_2(path=_path + "/input.txt", print_value=True):
-#     input = read(path)
+def main_2(path=_path + "/input.txt", print_value=True):
+    inputs = read(path)
 
-#     res = 0
+    last_total=50
+    total = 50
+    res = 0
+    shifts = [(-1)**int(v[0] == 'L')*v[1]  for v in inputs]
+    totals = [total]
+    for i, shift in enumerate(shifts):
+        last_total = total
+        total = (total + shift)
 
-#     if print_value:
-#         print(res)
-#     return res
+        if last_total == 0 and total//100 < 0:
+            res -= 1
+        res += abs(total//100)
+        if total == 0:
+            res +=1
+
+        totals.append(total%100)
+        total = total%100
+
+
+    # import pdb; pdb.set_trace()
+    print(totals)
+    if print_value:
+        print(res)
+    return res
 
 
 def check_example(func, input_filename = "example_input.txt", answer_filename = "example_answer.txt"):
@@ -48,12 +67,12 @@ def check_example(func, input_filename = "example_input.txt", answer_filename = 
     ), f"Calculation {example_calculation} is different from example answer {example_answer}"
 
 if __name__ == "__main__":
-    check_example(main, input_filename = "example_input.txt", answer_filename = "example_answer.txt")
-
-    #run on the input
-    main(print_value=True)
-
-    # check_example(main_2, input_filename = "example_input.txt", answer_filename = "example_answer_2.txt")
+    # check_example(main, input_filename = "example_input.txt", answer_filename = "example_answer.txt")
 
     # #run on the input
-    # main_2()
+    # main()
+
+    check_example(main_2, input_filename = "example_input_2.txt", answer_filename = "example_answer_3.txt")
+
+    #run on the input
+    main_2()
